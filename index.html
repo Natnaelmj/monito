@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frigo Sentinella — Monitoraggio frigoriferi &amp; registro HACCP automatico</title>
+<meta name="description" content="Sensore wireless nel frigo, avviso su WhatsApp entro 15 minuti, registro temperature HACCP compilato da solo. Installazione locale, nessun vincolo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --midnight:#0e2438;
+    --ocean:#1e3a5f;
+    --alert:#d84c3c;
+    --sentinel:#27ae60;
+    --frost:#f7f9fb;
+    --text:#333333;
+    --text-soft:#5a636c;
+    --border-soft:rgba(14,36,56,.10);
+    --border-soft-dark:rgba(255,255,255,.14);
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+    --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+    --container:1160px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--text);
+    background:var(--frost);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  img,svg{display:block;max-width:100%;}
+  a{color:inherit;}
+  .container{max-width:var(--container);margin:0 auto;padding:0 24px;}
+  .tabular{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
+
+  h1,h2,h3{
+    font-family:var(--font-display);
+    letter-spacing:-0.01em;
+    margin:0;
+    color:var(--ocean);
+  }
+  h1{font-size:clamp(2.1rem,4.6vw,3.55rem);line-height:1.06;letter-spacing:-0.02em;}
+  h2{font-size:clamp(1.7rem,3.4vw,2.5rem);line-height:1.12;}
+  h3{font-size:1.15rem;line-height:1.3;}
+  p{margin:0;}
+
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--font-body);
+    font-size:.72rem;
+    font-weight:700;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ocean);
+    opacity:.75;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px;height:7px;border-radius:50%;
+    background:var(--alert);
+    box-shadow:0 0 0 3px rgba(216,76,60,.18);
+  }
+
+  /* ---------- focus ---------- */
+  a:focus-visible,button:focus-visible{
+    outline:2px solid var(--alert);
+    outline-offset:3px;
+    border-radius:4px;
+  }
+
+  /* ---------- scroll progress ---------- */
+  .scroll-progress{
+    position:fixed;top:0;left:0;height:2px;width:100%;
+    background:var(--alert);
+    z-index:1000;
+    transform:scaleX(0);
+    transform-origin:left;
+    transition:transform 80ms linear;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .scroll-progress{transition:none;}
+  }
+
+  /* ---------- header ---------- */
+  .site-header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(247,249,251,.82);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border-soft);
+  }
+  .site-header .container{
+    display:flex;align-items:center;justify-content:space-between;
+    height:64px;
+  }
+  .logo{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:1.05rem;
+    color:var(--ocean);
+    display:flex;align-items:center;gap:8px;
+    text-decoration:none;
+  }
+  .logo-mark{
+    width:9px;height:9px;border-radius:2px;
+    background:var(--ocean);
+    position:relative;
+  }
+  .logo-mark::after{
+    content:"";
+    position:absolute;inset:-4px;
+    border:1.5px solid var(--ocean);
+    border-radius:5px;
+    opacity:.35;
+  }
+  .header-cta{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:.85rem;
+    color:var(--ocean);
+    text-decoration:none;
+    padding:8px 16px;
+    border:1.5px solid var(--border-soft);
+    border-radius:8px;
+    transition:transform 200ms var(--ease-entrance),border-color 200ms,background 200ms;
+  }
+  .header-cta:hover{
+    border-color:var(--ocean);
+    background:rgba(30,58,95,.05);
+    transform:translateY(-2px);
+  }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:.92rem;
+    letter-spacing:.02em;
+    padding:15px 26px;
+    border-radius:10px;
+    text-decoration:none;
+    cursor:pointer;
+    border:none;
+    transition:transform 200ms var(--ease-entrance),box-shadow 200ms var(--ease-entrance),background 200ms;
+    white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px) scale(.99);}
+  .btn-primary{
+    background:var(--ocean);
+    color:#fff;
+    box-shadow:0 1px 2px rgba(14,36,56,.15);
+  }
+  .btn-primary:hover{
+    background:#17304e;
+    transform:translateY(-2px);
+    box-shadow:0 10px 24px -8px rgba(14,36,56,.45);
+  }
+  .btn-primary .arrow{transition:transform 200ms var(--ease-entrance);}
+  .btn-primary:hover .arrow{transform:translateX(3px);}
+  .btn-ghost{
+    background:transparent;
+    color:var(--ocean);
+    padding:15px 6px;
+  }
+  .btn-ghost .arrow{transition:transform 200ms var(--ease-entrance);}
+  .btn-ghost:hover .arrow{transform:translateX(3px);}
+  .btn-inverse{
+    background:#fff;
+    color:var(--ocean);
+  }
+  .btn-inverse:hover{
+    background:var(--frost);
+    transform:translateY(-2px);
+    box-shadow:0 10px 26px -8px rgba(0,0,0,.35);
+  }
+
+  /* ---------- reveal system ---------- */
+  .reveal{
+    opacity:0;
+    transform:translateY(22px);
+    transition:opacity 650ms var(--ease-entrance),transform 650ms var(--ease-entrance);
+  }
+  .reveal.visible{opacity:1;transform:translateY(0);}
+  @media (prefers-reduced-motion: reduce){
+    .reveal{opacity:1;transform:none;transition:none;}
+  }
+
+  /* ---------- hero entrance ---------- */
+  .hero-entrance{
+    opacity:0;
+    transform:translateY(16px);
+    animation:heroIn 600ms var(--ease-entrance) forwards;
+  }
+  @keyframes heroIn{to{opacity:1;transform:translateY(0);}}
+  @media (prefers-reduced-motion: reduce){
+    .hero-entrance{opacity:1;transform:none;animation:none;}
+  }
+
+  /* ---------- sections ---------- */
+  section{padding:96px 0;}
+  .section-dark{background:var(--midnight);color:#c9d5e0;}
+  .section-dark h2{color:#fff;}
+
+  /* ---------- hero ---------- */
+  .section-hero{padding:76px 0 108px;overflow:hidden;}
+  .hero-grid{
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    gap:56px;
+    align-items:center;
+  }
+  .hero-copy h1{margin-top:18px;}
+  .hero-copy p.sub{
+    margin-top:22px;
+    font-size:1.1rem;
+    line-height:1.6;
+    color:var(--text-soft);
+    max-width:46ch;
+  }
+  .hero-actions{
+    margin-top:34px;
+    display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  }
+
+  /* ---------- phone demo ---------- */
+  .phone-stage{
+    display:flex;justify-content:center;
+    perspective:1400px;
+  }
+  .phone-frame{
+    width:264px;
+    aspect-ratio:9/19.2;
+    background:linear-gradient(160deg,#16324f,var(--midnight));
+    border-radius:34px;
+    padding:12px;
+    box-shadow:
+      0 30px 60px -20px rgba(14,36,56,.45),
+      0 8px 20px -8px rgba(14,36,56,.35),
+      inset 0 0 0 1px rgba(255,255,255,.06);
+    transform:rotateY(-6deg) rotateX(2deg);
+  }
+  .phone-screen{
+    position:relative;
+    width:100%;height:100%;
+    background:var(--frost);
+    border-radius:24px;
+    overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .phone-notch{
+    position:absolute;top:8px;left:50%;transform:translateX(-50%);
+    width:64px;height:6px;border-radius:4px;
+    background:rgba(14,36,56,.18);
+    z-index:5;
+  }
+  .app-bar{
+    padding:26px 18px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--border-soft);
+  }
+  .app-bar .app-name{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:.78rem;
+    color:var(--ocean);
+  }
+  .status-dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--sentinel);
+    box-shadow:0 0 0 3px rgba(39,174,96,.18);
+    transition:background 300ms,box-shadow 300ms;
+  }
+  .status-dot.alert{
+    background:var(--alert);
+    box-shadow:0 0 0 3px rgba(216,76,60,.2);
+  }
+
+  .readout{
+    flex:1;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:10px;
+    position:relative;
+    padding:8px 12px 18px;
+  }
+  .thermo-wrap{position:relative;width:34px;height:34px;margin-bottom:2px;}
+  .thermo-icon{width:34px;height:34px;color:var(--ocean);transition:color 300ms;}
+  .thermo-icon.danger{color:var(--alert);}
+  .ping{
+    position:absolute;inset:0;
+    border-radius:50%;
+    border:2px solid var(--alert);
+    opacity:0;
+    transform:scale(1);
+  }
+  .ping.active{animation:pingPulse 1000ms var(--ease-entrance) 2;}
+  @keyframes pingPulse{
+    0%{opacity:.7;transform:scale(1);}
+    100%{opacity:0;transform:scale(2.4);}
+  }
+
+  .temp-value{
+    font-family:var(--font-display);
+    font-size:2.15rem;
+    font-weight:600;
+    color:var(--sentinel);
+    transition:color 250ms;
+  }
+  .temp-value.danger{color:var(--alert);}
+  .temp-caption{
+    font-size:.72rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-soft);
+    font-weight:600;
+  }
+
+  .notif-card{
+    margin:0 12px 14px;
+    background:#fff;
+    border-radius:14px;
+    padding:12px 13px;
+    display:flex;gap:10px;align-items:flex-start;
+    box-shadow:0 12px 28px -10px rgba(14,36,56,.28);
+    border-left:3px solid var(--alert);
+    opacity:0;
+    transform:translateY(14px) scale(.97);
+    transition:opacity 420ms var(--ease-spring),transform 420ms var(--ease-spring);
+  }
+  .notif-card.visible{opacity:1;transform:translateY(0) scale(1);}
+  .notif-card.fading{opacity:0;transform:translateY(-6px) scale(.98);transition:opacity 380ms ease-out,transform 380ms ease-out;}
+  .notif-icon{font-size:1.15rem;line-height:1;margin-top:1px;}
+  .notif-text strong{
+    display:block;
+    font-size:.78rem;
+    color:var(--midnight);
+    margin-bottom:2px;
+  }
+  .notif-text p{
+    font-size:.76rem;
+    color:var(--text-soft);
+    line-height:1.4;
+  }
+  .notif-text .notif-temp{color:var(--alert);font-weight:700;}
+
+  @media (prefers-reduced-motion: reduce){
+    .ping{display:none;}
+    .notif-card{transition:none;}
+  }
+
+  /* ---------- problema ---------- */
+  .problema-grid{
+    display:grid;grid-template-columns:1.1fr .9fr;gap:64px;align-items:center;
+  }
+  .problema-body{
+    margin-top:20px;
+    font-size:1.06rem;
+    line-height:1.7;
+    color:#aab8c6;
+    max-width:52ch;
+  }
+  .stat-card{
+    background:rgba(255,255,255,.04);
+    border:1px solid var(--border-soft-dark);
+    border-radius:18px;
+    padding:36px 30px;
+    text-align:center;
+  }
+  .stat-phrase{
+    font-family:var(--font-display);
+    font-size:clamp(1.35rem,2.6vw,1.7rem);
+    font-weight:600;
+    color:var(--alert);
+    line-height:1.25;
+  }
+  .stat-count-row{
+    margin-top:28px;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+  }
+  .stat-count-num{
+    font-family:var(--font-display);
+    font-size:clamp(2.6rem,5.4vw,3.4rem);
+    font-weight:700;
+    color:#fff;
+    line-height:1;
+  }
+  .stat-count-unit{
+    font-size:.82rem;
+    color:#aab8c6;
+    line-height:1.35;
+    text-align:left;
+  }
+  .stat-mini-temp{
+    margin-top:22px;
+    font-family:var(--font-display);
+    font-size:1.05rem;
+    color:#c9d5e0;
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;
+    border-radius:999px;
+    background:rgba(216,76,60,.12);
+    border:1px solid rgba(216,76,60,.3);
+  }
+  .stat-mini-temp .dot{width:6px;height:6px;border-radius:50%;background:var(--alert);}
+
+  /* ---------- soluzione ---------- */
+  .section-head{max-width:60ch;}
+  .cards-3{
+    margin-top:56px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  }
+  .card{
+    background:#fff;
+    border:1px solid var(--border-soft);
+    border-radius:18px;
+    padding:32px 28px;
+    transition:transform 220ms var(--ease-entrance),box-shadow 220ms var(--ease-entrance),border-color 220ms;
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 20px 40px -18px rgba(14,36,56,.22);
+    border-color:rgba(30,58,95,.18);
+  }
+  .card-icon{
+    width:44px;height:44px;
+    border-radius:11px;
+    background:rgba(30,58,95,.08);
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:20px;
+  }
+  .card-icon svg{width:22px;height:22px;color:var(--ocean);}
+  .card h3{margin-bottom:10px;}
+  .card p{color:var(--text-soft);font-size:.94rem;line-height:1.6;}
+
+  /* ---------- come funziona ---------- */
+  .timeline{margin-top:56px;max-width:680px;}
+  .timeline-item{
+    display:grid;grid-template-columns:52px 1fr;gap:22px;
+    position:relative;
+    padding-bottom:44px;
+  }
+  .timeline-item:last-child{padding-bottom:0;}
+  .timeline-item::before{
+    content:"";
+    position:absolute;
+    left:25px;top:52px;bottom:0;
+    width:1.5px;
+    background:var(--border-soft);
+  }
+  .timeline-item:last-child::before{display:none;}
+  .timeline-num{
+    width:52px;height:52px;border-radius:50%;
+    background:var(--ocean);
+    color:#fff;
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:1.15rem;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+  }
+  .timeline-content{padding-top:8px;}
+  .timeline-content h3{margin-bottom:8px;}
+  .timeline-content p{color:var(--text-soft);font-size:.95rem;line-height:1.6;}
+
+  /* ---------- prezzi ---------- */
+  .cards-2{
+    margin-top:56px;
+    display:grid;grid-template-columns:1fr 1fr;gap:24px;
+  }
+  .price-card{
+    background:#fff;
+    border:1px solid var(--border-soft);
+    border-radius:18px;
+    padding:38px 32px;
+    transition:transform 220ms var(--ease-entrance),box-shadow 220ms var(--ease-entrance);
+  }
+  .price-card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 20px 40px -18px rgba(14,36,56,.2);
+  }
+  .price-card .price-label{
+    font-size:.82rem;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ocean);
+    opacity:.8;
+  }
+  .price-amount{
+    margin-top:14px;
+    display:flex;align-items:baseline;gap:6px;
+  }
+  .price-amount .num{
+    font-family:var(--font-display);
+    font-size:3.1rem;
+    font-weight:700;
+    color:var(--ocean);
+    line-height:1;
+  }
+  .price-amount .unit{
+    font-size:1.05rem;
+    color:var(--text-soft);
+    font-weight:600;
+  }
+  .price-desc{margin-top:14px;color:var(--text-soft);font-size:.94rem;line-height:1.55;}
+  .price-note{
+    margin-top:28px;
+    font-size:.92rem;
+    color:var(--text-soft);
+    padding:16px 18px;
+    background:var(--frost);
+    border-radius:12px;
+    border:1px solid var(--border-soft);
+  }
+
+  /* ---------- contatti ---------- */
+  .contatti-wrap{text-align:center;max-width:640px;margin:0 auto;}
+  .contatti-wrap h2{margin:0 auto;}
+  .contatti-actions{
+    margin-top:38px;
+    display:flex;flex-direction:column;align-items:center;gap:18px;
+  }
+  .contact-links{
+    display:flex;gap:28px;flex-wrap:wrap;justify-content:center;
+    font-size:.95rem;
+  }
+  .contact-links a{
+    text-decoration:none;
+    color:#c9d5e0;
+    border-bottom:1px solid rgba(201,213,224,.3);
+    padding-bottom:2px;
+    transition:color 200ms,border-color 200ms;
+  }
+  .contact-links a:hover{color:#fff;border-color:#fff;}
+  .contatti-small{
+    margin-top:26px;
+    font-size:.85rem;
+    color:#8296a8;
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    background:var(--midnight);
+    border-top:1px solid var(--border-soft-dark);
+    padding:28px 0;
+  }
+  footer .container{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:.82rem;
+    color:#7c8fa0;
+    flex-wrap:wrap;gap:12px;
+  }
+  footer a{color:#7c8fa0;text-decoration:none;}
+  footer a:hover{color:#fff;}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .hero-grid{grid-template-columns:1fr;gap:48px;}
+    .phone-frame{width:220px;transform:none;}
+    .problema-grid{grid-template-columns:1fr;gap:40px;}
+    .cards-3{grid-template-columns:1fr;}
+    .cards-2{grid-template-columns:1fr;}
+    section{padding:72px 0;}
+    .header-cta{display:none;}
+  }
+  @media (max-width:420px){
+    .container{padding:0 18px;}
+    .btn{padding:14px 20px;font-size:.86rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="scrollProgress"></div>
+
+<header class="site-header">
+  <div class="container">
+    <a href="#hero" class="logo">
+      <span class="logo-mark" aria-hidden="true"></span>
+      Frigo Sentinella
+    </a>
+    <a class="header-cta" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici su WhatsApp</a>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================= HERO ================= -->
+  <section id="hero" class="section-hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow hero-entrance" style="animation-delay:0ms">MONITORAGGIO FRIGORIFERI · HACCP</span>
+        <h1 class="hero-entrance" style="animation-delay:90ms">Se il congelatore muore di notte, te lo dice entro 15 minuti.</h1>
+        <p class="sub hero-entrance" style="animation-delay:180ms">Sensore wireless nel frigo, avviso su WhatsApp, registro temperature per l'ASL compilato da solo. Nessun vincolo.</p>
+        <div class="hero-actions hero-entrance" style="animation-delay:270ms">
+          <a class="btn btn-primary" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">
+            PARLIAMONE SU WHATSAPP <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <a class="btn btn-ghost" href="#problema" data-scroll>
+            Scopri di più <span class="arrow" aria-hidden="true">↓</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="phone-stage hero-entrance" style="animation-delay:150ms">
+        <div class="phone-frame" role="img" aria-label="Simulazione: l'app Frigo Sentinella invia un avviso WhatsApp quando la temperatura del congelatore esce dal range di sicurezza.">
+          <div class="phone-screen">
+            <div class="phone-notch" aria-hidden="true"></div>
+            <div class="app-bar">
+              <span class="app-name">FRIGO SENTINELLA</span>
+              <span class="status-dot" id="statusDot" aria-hidden="true"></span>
+            </div>
+            <div class="readout">
+              <div class="thermo-wrap" aria-hidden="true">
+                <span class="ping" id="ping"></span>
+                <svg class="thermo-icon" id="thermoIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 3a2.5 2.5 0 0 0-2.5 2.5v8.55a4 4 0 1 0 5 0V5.5A2.5 2.5 0 0 0 12 3Z"/>
+                  <circle cx="12" cy="17.5" r="2.1"/>
+                  <line x1="12" y1="7" x2="12" y2="13.5"/>
+                </svg>
+              </div>
+              <span class="temp-value tabular" id="tempValue">-18.0°C</span>
+              <span class="temp-caption">Congelatore</span>
+
+              <div class="notif-card" id="notifCard">
+                <span class="notif-icon" aria-hidden="true">⚠️</span>
+                <div class="notif-text">
+                  <strong>Frigo Sentinella</strong>
+                  <p>Congelatore: <span class="notif-temp tabular" id="notifTemp">-9.4°C</span>, fuori range. <span class="tabular" id="notifTime">02:14</span></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= IL PROBLEMA ================= -->
+  <section id="problema" class="section-dark">
+    <div class="container problema-grid">
+      <div class="reveal">
+        <span class="eyebrow" style="color:#c9d5e0;">IL RISCHIO REALE</span>
+        <h2 style="margin-top:16px;">Il guasto che scopri sempre troppo tardi.</h2>
+        <p class="problema-body">Un compressore che cede di notte significa centinaia di euro di merce da buttare — e lo scopri solo la mattina dopo, ad apertura. Intanto il registro delle temperature per l'ASL è ancora un foglio di carta attaccato al frigo.</p>
+      </div>
+      <div class="reveal" style="transition-delay:100ms;">
+        <div class="stat-card">
+          <p class="stat-phrase">Una notte fuori range = merce persa.</p>
+          <div class="stat-count-row">
+            <span class="stat-count-num tabular" data-count-to="15">0</span>
+            <span class="stat-count-unit">minuti<br>per l'avviso</span>
+          </div>
+          <span class="stat-mini-temp">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="tabular">-9.4°C alle 02:14</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= LA SOLUZIONE ================= -->
+  <section id="soluzione">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">COME FUNZIONA IL SISTEMA</span>
+        <h2 style="margin-top:16px;">Tre cose, e non ci pensi più.</h2>
+      </div>
+      <div class="cards-3">
+        <div class="card reveal">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M2 8.5a15 15 0 0 1 20 0"/>
+              <path d="M5.5 12a10 10 0 0 1 13 0"/>
+              <path d="M9 15.5a5 5 0 0 1 6 0"/>
+              <circle cx="12" cy="19" r="1.3" fill="currentColor" stroke="none"/>
+            </svg>
+          </div>
+          <h3>Sensore nel frigo</h3>
+          <p>Wireless, a batteria, installato in 20 minuti. Non tocco niente del tuo frigorifero.</p>
+        </div>
+        <div class="card reveal" style="transition-delay:90ms;">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </div>
+          <h3>Allarme immediato</h3>
+          <p>WhatsApp o SMS se la temperatura esce di range — o se il sensore smette di rispondere.</p>
+        </div>
+        <div class="card reveal" style="transition-delay:180ms;">
+          <div class="card-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 3v5h5"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+              <line x1="9" y1="17" x2="15" y2="17"/>
+            </svg>
+          </div>
+          <h3>Registro ASL automatico</h3>
+          <p>Il 1° di ogni mese ricevi il PDF del registro temperature, pronto per l'ispezione.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= COME FUNZIONA ================= -->
+  <section id="come-funziona" style="background:#fff;">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">DALL'INSTALLAZIONE AL PDF</span>
+        <h2 style="margin-top:16px;">Come funziona, passo per passo.</h2>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item reveal">
+          <span class="timeline-num" aria-hidden="true">1</span>
+          <div class="timeline-content">
+            <h3>Installazione (20 minuti)</h3>
+            <p>Posiziono il sensore, lo collego al wifi, configuro gli avvisi.</p>
+          </div>
+        </div>
+        <div class="timeline-item reveal" style="transition-delay:90ms;">
+          <span class="timeline-num" aria-hidden="true">2</span>
+          <div class="timeline-content">
+            <h3>Monitoraggio 24/7</h3>
+            <p>Ogni pochi minuti una lettura. Fuori range? Ti scrivo subito.</p>
+          </div>
+        </div>
+        <div class="timeline-item reveal" style="transition-delay:180ms;">
+          <span class="timeline-num" aria-hidden="true">3</span>
+          <div class="timeline-content">
+            <h3>Registro automatico</h3>
+            <p>PDF mensile via email. Fine dei fogli di carta.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PREZZI ================= -->
+  <section id="prezzi">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">PREZZI SEMPLICI</span>
+        <h2 style="margin-top:16px;">Nessuna sorpresa, nessun vincolo.</h2>
+      </div>
+      <div class="cards-2">
+        <div class="price-card reveal">
+          <span class="price-label">Installazione</span>
+          <div class="price-amount">
+            <span class="num tabular" data-count-to="299">0</span>
+            <span class="unit">€</span>
+          </div>
+          <p class="price-desc">2 sensori inclusi</p>
+        </div>
+        <div class="price-card reveal" style="transition-delay:90ms;">
+          <span class="price-label">Monitoraggio</span>
+          <div class="price-amount">
+            <span class="num tabular" data-count-to="29">0</span>
+            <span class="unit">€/mese</span>
+          </div>
+          <p class="price-desc">nessun vincolo, disdici quando vuoi</p>
+        </div>
+      </div>
+      <p class="price-note reveal">Se un sensore si guasta, lo sostituisco io. Gratis.</p>
+    </div>
+  </section>
+
+  <!-- ================= CONTATTI ================= -->
+  <section id="contatti" class="section-dark">
+    <div class="container contatti-wrap">
+      <div class="reveal">
+        <h2>Il tuo congelatore non ti sorprenderà più.</h2>
+        <div class="contatti-actions">
+          <a class="btn btn-inverse" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">
+            SCRIVIMI SU WHATSAPP <span class="arrow" aria-hidden="true">→</span>
+          </a>
+          <div class="contact-links">
+            <a href="tel:+39333XXXXXXX">+39 333 XXXXXXX</a>
+            <a href="mailto:frigo.sentinella@gmail.com">frigo.sentinella@gmail.com</a>
+          </div>
+        </div>
+        <p class="contatti-small">Installazioni locali. Vengo io da te.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <span>© 2026 Frigo Sentinella · Monitoraggio HACCP</span>
+    <a href="#">Privacy</a>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- scroll progress bar ---------- */
+  var progressEl = document.getElementById("scrollProgress");
+  function updateProgress(){
+    var doc = document.documentElement;
+    var scrollTop = window.scrollY || doc.scrollTop;
+    var height = doc.scrollHeight - doc.clientHeight;
+    var pct = height > 0 ? scrollTop / height : 0;
+    progressEl.style.transform = "scaleX(" + pct + ")";
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  /* ---------- smooth-scroll anchors (respect reduced motion) ---------- */
+  document.querySelectorAll('a[href^="#"]').forEach(function(link){
+    link.addEventListener("click", function(e){
+      var id = link.getAttribute("href");
+      if (id.length < 2) return;
+      var target = document.querySelector(id);
+      if (!target) return;
+      e.preventDefault();
+      target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    });
+  });
+
+  /* ---------- scroll reveal ---------- */
+  var revealEls = document.querySelectorAll(".reveal");
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    revealEls.forEach(function(el){ el.classList.add("visible"); });
+  } else {
+    var revealObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          entry.target.classList.add("visible");
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.2 });
+    revealEls.forEach(function(el){ revealObserver.observe(el); });
+  }
+
+  /* ---------- count-up numbers ---------- */
+  function countUp(el, to, duration, suffix){
+    var start = performance.now();
+    function tick(now){
+      var t = Math.min((now - start) / duration, 1);
+      var eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      var val = Math.round(to * eased);
+      el.textContent = val + (suffix || "");
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = to + (suffix || "");
+    }
+    requestAnimationFrame(tick);
+  }
+  var countEls = document.querySelectorAll("[data-count-to]");
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    countEls.forEach(function(el){
+      el.textContent = el.getAttribute("data-count-to") + (el.getAttribute("data-suffix") || "");
+    });
+  } else {
+    var countObserver = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (entry.isIntersecting) {
+          var el = entry.target;
+          var to = parseInt(el.getAttribute("data-count-to"), 10);
+          var suffix = el.getAttribute("data-suffix") || "";
+          countUp(el, to, 700, suffix);
+          countObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.4 });
+    countEls.forEach(function(el){ countObserver.observe(el); });
+  }
+
+  /* ---------- hero signature alert-loop demo ---------- */
+  var tempValue = document.getElementById("tempValue");
+  var thermoIcon = document.getElementById("thermoIcon");
+  var ping = document.getElementById("ping");
+  var notifCard = document.getElementById("notifCard");
+  var statusDot = document.getElementById("statusDot");
+
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
+  function animateTemp(from, to, duration){
+    return new Promise(function(resolve){
+      var start = performance.now();
+      function tick(now){
+        var t = Math.min((now - start) / duration, 1);
+        var val = from + (to - from) * t;
+        tempValue.textContent = val.toFixed(1) + "°C";
+        if (t < 1) requestAnimationFrame(tick);
+        else resolve();
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  function setDanger(isDanger){
+    tempValue.classList.toggle("danger", isDanger);
+    thermoIcon.classList.toggle("danger", isDanger);
+    statusDot.classList.toggle("alert", isDanger);
+  }
+
+  async function alertLoop(){
+    while (true) {
+      // reset / safe state
+      tempValue.textContent = "-18.0°C";
+      setDanger(false);
+      notifCard.classList.remove("visible", "fading");
+      ping.classList.remove("active");
+
+      await sleep(1200);
+
+      // temperature climbs into danger
+      await animateTemp(-18.0, -9.4, 1700);
+      setDanger(true);
+
+      await sleep(120);
+      ping.classList.add("active");
+
+      await sleep(260);
+      notifCard.classList.add("visible");
+
+      // hold the alert state
+      await sleep(4000);
+
+      notifCard.classList.add("fading");
+      await sleep(420);
+    }
+  }
+
+  function staticAlertState(){
+    tempValue.textContent = "-9.4°C";
+    setDanger(true);
+    notifCard.classList.add("visible");
+  }
+
+  if (reduceMotion) {
+    staticAlertState();
+  } else {
+    alertLoop();
+  }
+})();
+</script>
+
+</body>
+</html>
