@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monito — Monitoraggio frigoriferi &amp; registro HACCP automatico</title>
 <meta name="description" content="Sensore wireless nel frigo, avviso su WhatsApp entro 15 minuti, registro temperature HACCP compilato da solo. Installazione locale, nessun vincolo.">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/assets/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -122,24 +125,13 @@
     height:64px;
   }
   .logo{
-    font-family:var(--font-display);
-    font-weight:600;
-    font-size:1.05rem;
-    color:var(--ocean);
-    display:flex;align-items:center;gap:8px;
+    display:flex;align-items:center;
     text-decoration:none;
   }
-  .logo-mark{
-    width:9px;height:9px;border-radius:2px;
-    background:var(--grad-brand);
-    position:relative;
-  }
-  .logo-mark::after{
-    content:"";
-    position:absolute;inset:-4px;
-    border:1.5px solid var(--ocean-glow);
-    border-radius:5px;
-    opacity:.35;
+  .logo-img{
+    height:26px;
+    width:auto;
+    display:block;
   }
   .header-cta{
     font-family:var(--font-body);
@@ -658,8 +650,7 @@
 <header class="site-header">
   <div class="container">
     <a href="#hero" class="logo">
-      <span class="logo-mark" aria-hidden="true"></span>
-      Monito
+      <img src="assets/logo.png" alt="Monito" class="logo-img">
     </a>
     <a class="header-cta" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici su WhatsApp</a>
   </div>
