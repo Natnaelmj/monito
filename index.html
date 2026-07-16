@@ -527,18 +527,19 @@
   .timeline-content p{color:var(--text-soft);font-size:.95rem;line-height:1.6;}
 
   /* ---------- prezzi ---------- */
-  .cards-2{
+  .pricing-tiers{
     margin-top:56px;
-    display:grid;grid-template-columns:1fr 1fr;gap:24px;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+    align-items:start;
   }
   .price-card{
     position:relative;
     background:#fff;
     border:1px solid var(--border-soft);
     border-radius:18px;
-    padding:38px 32px;
+    padding:34px 28px;
     overflow:hidden;
-    transition:transform 220ms var(--ease-entrance),box-shadow 220ms var(--ease-entrance);
+    transition:transform 220ms var(--ease-entrance),box-shadow 220ms var(--ease-entrance),border-color 220ms;
   }
   .price-card::before{
     content:"";
@@ -552,6 +553,28 @@
   .price-card:hover{
     transform:translateY(-4px);
     box-shadow:0 20px 40px -18px rgba(14,36,56,.2);
+  }
+  .price-card-featured{
+    border:1.5px solid var(--ocean-light);
+    box-shadow:0 16px 36px -16px rgba(30,58,95,.28);
+    transform:translateY(-8px);
+  }
+  .price-card-featured:hover{
+    transform:translateY(-12px);
+    box-shadow:0 24px 44px -16px rgba(30,58,95,.34);
+  }
+  .price-badge{
+    position:absolute;top:0;right:28px;
+    transform:translateY(-50%);
+    background:var(--grad-brand);
+    color:#fff;
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    padding:6px 12px;
+    border-radius:999px;
+    box-shadow:0 4px 10px -2px rgba(30,58,95,.4);
   }
   .price-card .price-label{
     font-size:.82rem;
@@ -567,16 +590,23 @@
   }
   .price-amount .num{
     font-family:var(--font-display);
-    font-size:3.1rem;
+    font-size:clamp(2.1rem,4.2vw,2.7rem);
     font-weight:700;
     line-height:1;
   }
   .price-amount .unit{
-    font-size:1.05rem;
+    font-size:1rem;
     color:var(--text-soft);
     font-weight:600;
   }
-  .price-desc{margin-top:14px;color:var(--text-soft);font-size:.94rem;line-height:1.55;}
+  .price-monthly{
+    margin-top:8px;
+    font-size:.92rem;
+    color:var(--text-soft);
+    font-weight:600;
+  }
+  .price-monthly .tabular{color:var(--ocean);}
+  .price-desc{margin-top:14px;color:var(--text-soft);font-size:.9rem;line-height:1.55;}
   .price-note{
     margin-top:28px;
     font-size:.92rem;
@@ -633,7 +663,9 @@
     .phone-frame{width:220px;transform:none;}
     .problema-grid{grid-template-columns:1fr;gap:40px;}
     .cards-3{grid-template-columns:1fr;}
-    .cards-2{grid-template-columns:1fr;}
+    .pricing-tiers{grid-template-columns:1fr;}
+    .price-card-featured{transform:none;}
+    .price-card-featured:hover{transform:translateY(-4px);}
     section{padding:72px 0;}
     .header-cta{display:none;}
   }
@@ -820,25 +852,37 @@
         <span class="eyebrow">PREZZI SEMPLICI</span>
         <h2 style="margin-top:16px;">Nessuna sorpresa, nessun vincolo.</h2>
       </div>
-      <div class="cards-2">
+      <div class="pricing-tiers">
         <div class="price-card reveal">
-          <span class="price-label">Installazione</span>
+          <span class="price-label">Pilot</span>
+          <div class="price-amount">
+            <span class="num grad-text tabular" data-count-to="149">0</span>
+            <span class="unit">€</span>
+          </div>
+          <p class="price-monthly">+ <span class="tabular" data-count-to="29">0</span>€/mese</p>
+          <p class="price-desc">1 sensore incluso</p>
+        </div>
+        <div class="price-card price-card-featured reveal" style="transition-delay:90ms;">
+          <span class="price-badge">Più scelto</span>
+          <span class="price-label">Standard</span>
           <div class="price-amount">
             <span class="num grad-text tabular" data-count-to="299">0</span>
             <span class="unit">€</span>
           </div>
+          <p class="price-monthly">+ <span class="tabular" data-count-to="29">0</span>€/mese</p>
           <p class="price-desc">2 sensori inclusi</p>
         </div>
-        <div class="price-card reveal" style="transition-delay:90ms;">
-          <span class="price-label">Monitoraggio</span>
+        <div class="price-card reveal" style="transition-delay:180ms;">
+          <span class="price-label">Premium</span>
           <div class="price-amount">
-            <span class="num grad-text tabular" data-count-to="29">0</span>
-            <span class="unit">€/mese</span>
+            <span class="num grad-text tabular" data-count-to="399">0</span>
+            <span class="unit">€</span>
           </div>
-          <p class="price-desc">nessun vincolo, disdici quando vuoi</p>
+          <p class="price-monthly">+ <span class="tabular" data-count-to="39">0</span>€/mese</p>
+          <p class="price-desc">3 sensori inclusi</p>
         </div>
       </div>
-      <p class="price-note reveal">Se un sensore si guasta, lo sostituiamo noi. Gratis.</p>
+      <p class="price-note reveal">Se un sensore si guasta, lo sostituiamo noi. Gratis. Nessun vincolo, disdici quando vuoi.</p>
     </div>
   </section>
 
