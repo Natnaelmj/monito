@@ -133,6 +133,18 @@
     width:auto;
     display:block;
   }
+  .header-actions{
+    display:flex;align-items:center;gap:22px;
+  }
+  .nav-link{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:.85rem;
+    color:var(--ocean);
+    text-decoration:none;
+    transition:color 200ms;
+  }
+  .nav-link:hover{color:var(--ocean-glow);}
   .header-cta{
     font-family:var(--font-body);
     font-weight:600;
@@ -684,7 +696,10 @@
     <a href="#hero" class="logo">
       <img src="assets/logo.png" alt="Monito" class="logo-img">
     </a>
-    <a class="header-cta" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici su WhatsApp</a>
+    <div class="header-actions">
+      <a class="nav-link" href="assistente-frigo.html">Assistente Frigo</a>
+      <a class="header-cta" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici su WhatsApp</a>
+    </div>
   </div>
 </header>
 
