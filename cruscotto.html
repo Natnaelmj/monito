@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cruscotto — Monito</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --midnight:#0e2438;
+    --ocean:#1e3a5f;
+    --ocean-light:#3d6ea8;
+    --ocean-glow:#5b8dc9;
+    --alert:#d84c3c;
+    --sentinel:#27ae60;
+    --frost:#f7f9fb;
+    --text:#333333;
+    --text-soft:#5a636c;
+    --border-soft:rgba(14,36,56,.10);
+    --grad-brand:linear-gradient(135deg,var(--ocean-light) 0%,var(--ocean) 55%,var(--midnight) 100%);
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--text);
+    background:var(--frost);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    min-height:100dvh;
+  }
+  a{color:inherit;}
+
+  /* ---------- header ---------- */
+  .page-header{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 18px;
+    background:rgba(247,249,251,.9);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border-soft);
+    position:sticky;top:0;z-index:10;
+  }
+  .header-left{display:flex;align-items:center;gap:14px;}
+  .back-link{
+    font-family:var(--font-body);font-weight:600;font-size:.85rem;
+    color:var(--ocean);text-decoration:none;opacity:.8;transition:opacity 200ms;
+  }
+  .back-link:hover{opacity:1;}
+  .page-title{
+    font-family:var(--font-display);font-weight:600;font-size:.95rem;color:var(--ocean);
+  }
+  .sign-out-link{
+    font-size:.82rem;font-weight:600;color:var(--ocean);text-decoration:underline;
+  }
+
+  .demo-note{
+    font-size:.8rem;color:var(--text-soft);background:#fff;
+    border-bottom:1px solid var(--border-soft);
+    padding:9px 18px;text-align:center;
+  }
+
+  .auth-loading{
+    text-align:center;color:var(--text-soft);font-size:.9rem;padding:60px 20px;
+  }
+  body.ready .auth-loading{display:none;}
+
+  main{
+    max-width:840px;margin:0 auto;padding:26px 18px 60px;
+    display:none;
+    flex-direction:column;gap:18px;
+  }
+  body.ready main{display:flex;}
+
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--text-soft);
+    font-size:.92rem;line-height:1.6;
+  }
+
+  .sensor-card{
+    background:#fff;
+    border:1px solid var(--border-soft);
+    border-radius:16px;
+    padding:24px 24px 20px;
+  }
+  .sensor-card-top{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+    flex-wrap:wrap;
+  }
+  .sensor-name{
+    font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--ocean);
+  }
+  .sensor-updated{font-size:.78rem;color:var(--text-soft);margin-top:4px;}
+  .sensor-status{
+    display:inline-flex;align-items:center;gap:6px;
+    font-size:.78rem;font-weight:700;letter-spacing:.03em;
+    padding:6px 12px;border-radius:999px;
+  }
+  .sensor-status .dot{width:7px;height:7px;border-radius:50%;}
+  .status-ok{background:rgba(39,174,96,.1);color:#1e7a45;}
+  .status-ok .dot{background:var(--sentinel);}
+  .status-alert{background:rgba(216,76,60,.1);color:var(--alert);}
+  .status-alert .dot{background:var(--alert);}
+
+  .sensor-reading{
+    margin-top:18px;
+    display:flex;align-items:baseline;gap:10px;
+  }
+  .sensor-reading .value{
+    font-family:var(--font-display);font-weight:700;
+    font-size:clamp(2.2rem,5vw,2.8rem);
+  }
+  .sensor-reading .value.ok{color:var(--ocean);}
+  .sensor-reading .value.alert{color:var(--alert);}
+  .sensor-reading .caption{font-size:.82rem;color:var(--text-soft);}
+
+  .sparkline-wrap{margin-top:16px;}
+  .sparkline-wrap svg{display:block;width:100%;height:56px;}
+  .sparkline-caption{
+    margin-top:8px;font-size:.76rem;color:var(--text-soft);
+    display:flex;justify-content:space-between;
+  }
+
+  @media (max-width:520px){
+    .sensor-card{padding:20px 18px 18px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="page-header">
+  <div class="header-left">
+    <a href="index.html" class="back-link">← Monito</a>
+    <span class="page-title">Cruscotto</span>
+  </div>
+  <a href="#" class="sign-out-link" id="signOutLink">Esci</a>
+</header>
+
+<div class="demo-note">Dati di esempio — verranno sostituiti da quelli reali dopo l'installazione del sensore.</div>
+
+<div class="auth-loading" id="authLoading">Verifica accesso...</div>
+
+<main id="sensorList"></main>
+
+<script type="module">
+  import { getSession, signOut, supabase } from "./assets/auth.js";
+
+  var OUT_OF_RANGE_THRESHOLD = -15; // °C — above this, a freezer reading is a concern
+
+  document.getElementById("signOutLink").addEventListener("click", function(e){
+    e.preventDefault();
+    signOut().then(function(){ window.location.href = "index.html"; });
+  });
+
+  function formatTime(iso){
+    var d = new Date(iso);
+    return d.toLocaleString("it-IT", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  }
+
+  function buildSparkline(readingsAsc){
+    var w = 320, h = 56, pad = 4;
+    var temps = readingsAsc.map(function(r){ return Number(r.temperature); });
+    var min = Math.min.apply(null, temps);
+    var max = Math.max.apply(null, temps);
+    var range = max - min || 1;
+
+    var points = temps.map(function(t, i){
+      var x = pad + (i / (temps.length - 1 || 1)) * (w - pad * 2);
+      var y = h - pad - ((t - min) / range) * (h - pad * 2);
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+
+    var lastX = w - pad;
+    var lastY = h - pad - ((temps[temps.length - 1] - min) / range) * (h - pad * 2);
+    var lastOut = temps[temps.length - 1] > OUT_OF_RANGE_THRESHOLD;
+    var lineColor = lastOut ? "#d84c3c" : "#1e3a5f";
+
+    return (
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true">' +
+        '<polyline points="' + points + '" fill="none" stroke="' + lineColor + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<circle cx="' + lastX.toFixed(1) + '" cy="' + lastY.toFixed(1) + '" r="3.5" fill="' + lineColor + '"/>' +
+      '</svg>'
+    );
+  }
+
+  function renderSensor(sensor, readingsDesc){
+    var readingsAsc = readingsDesc.slice().reverse();
+    var latest = readingsDesc[0];
+    var isOut = latest && Number(latest.temperature) > OUT_OF_RANGE_THRESHOLD;
+
+    var card = document.createElement("div");
+    card.className = "sensor-card";
+
+    var statusHtml = latest
+      ? '<span class="sensor-status ' + (isOut ? "status-alert" : "status-ok") + '"><span class="dot"></span>' + (isOut ? "Fuori range" : "Nella norma") + '</span>'
+      : "";
+
+    var readingHtml = latest
+      ? '<div class="sensor-reading">' +
+          '<span class="value ' + (isOut ? "alert" : "ok") + '">' + Number(latest.temperature).toFixed(1) + '°C</span>' +
+          '<span class="caption">ultima lettura: ' + formatTime(latest.recorded_at) + '</span>' +
+        '</div>'
+      : '<div class="sensor-reading"><span class="caption">Nessuna lettura disponibile.</span></div>';
+
+    var sparkHtml = readingsAsc.length > 1
+      ? '<div class="sparkline-wrap">' + buildSparkline(readingsAsc) +
+          '<div class="sparkline-caption"><span>' + formatTime(readingsAsc[0].recorded_at) + '</span><span>ora</span></div>' +
+        '</div>'
+      : "";
+
+    card.innerHTML =
+      '<div class="sensor-card-top">' +
+        '<div>' +
+          '<div class="sensor-name">' + sensor.name + '</div>' +
+        '</div>' +
+        statusHtml +
+      '</div>' +
+      readingHtml +
+      sparkHtml;
+
+    return card;
+  }
+
+  (async function(){
+    var session = await getSession();
+    if (!session) {
+      window.location.href = "accedi.html?redirect=cruscotto.html";
+      return;
+    }
+
+    var list = document.getElementById("sensorList");
+
+    try {
+      var { data: sensors, error: sensorsErr } = await supabase
+        .from("sensors")
+        .select("id, name")
+        .order("created_at", { ascending: true });
+
+      if (sensorsErr) throw sensorsErr;
+
+      if (!sensors || sensors.length === 0) {
+        list.innerHTML = '<div class="empty-state">Nessun sensore configurato ancora. Scrivici su WhatsApp per l\'installazione.</div>';
+        document.body.classList.add("ready");
+        return;
+      }
+
+      for (var i = 0; i < sensors.length; i++) {
+        var sensor = sensors[i];
+        var { data: readings, error: readingsErr } = await supabase
+          .from("readings")
+          .select("temperature, recorded_at")
+          .eq("sensor_id", sensor.id)
+          .order("recorded_at", { ascending: false })
+          .limit(48);
+
+        if (readingsErr) throw readingsErr;
+        list.appendChild(renderSensor(sensor, readings || []));
+      }
+
+      document.body.classList.add("ready");
+    } catch (err) {
+      console.error("Cruscotto error:", err);
+      list.innerHTML = '<div class="empty-state">Non riusciamo a caricare i dati in questo momento. Riprova tra poco.</div>';
+      document.body.classList.add("ready");
+    }
+  })();
+</script>
+
+</body>
+</html>
