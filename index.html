@@ -698,6 +698,7 @@
     </a>
     <div class="header-actions">
       <a class="nav-link" href="assistente-frigo.html">Assistente Frigo</a>
+      <a class="nav-link" href="accedi.html" id="authLink">Accedi</a>
       <a class="header-cta" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici su WhatsApp</a>
     </div>
   </div>
@@ -1108,6 +1109,25 @@
     }
   } catch (err) { console.error("Monito cursor-glow error:", err); }
 })();
+</script>
+
+<script type="module">
+  // Swaps the header "Accedi" link to "Esci" when a session already exists.
+  // Failure here is non-critical (worst case the link just says "Accedi"
+  // for a logged-in user), so it's wrapped defensively.
+  try {
+    var { getSession, signOut } = await import("./assets/auth.js");
+    var session = await getSession();
+    var authLink = document.getElementById("authLink");
+    if (session && authLink) {
+      authLink.textContent = "Esci";
+      authLink.href = "#";
+      authLink.addEventListener("click", function(e){
+        e.preventDefault();
+        signOut().then(function(){ window.location.reload(); });
+      });
+    }
+  } catch (err) { console.error("Monito auth-link error:", err); }
 </script>
 
 </body>

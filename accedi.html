@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accedi — Monito</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ocean:#1e3a5f; --ocean-light:#3d6ea8; --ocean-glow:#5b8dc9;
+    --alert:#d84c3c; --frost:#f7f9fb; --text:#333333; --text-soft:#5a636c;
+    --border-soft:rgba(14,36,56,.10);
+    --grad-brand:linear-gradient(135deg,var(--ocean-light) 0%,var(--ocean) 55%,#0e2438 100%);
+    --font-display:'Space Grotesk',sans-serif;
+    --font-body:'Inter',system-ui,-apple-system,sans-serif;
+    --ease-entrance:cubic-bezier(0.16,1,0.3,1);
+  }
+  *,*::before,*::after{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-body);color:var(--text);background:var(--frost);
+    -webkit-font-smoothing:antialiased;padding:24px;
+  }
+  a{color:inherit;}
+  .auth-card{
+    width:100%;max-width:400px;background:#fff;
+    border:1px solid var(--border-soft);border-radius:18px;
+    padding:34px 30px;box-shadow:0 20px 44px -22px rgba(14,36,56,.22);
+  }
+  .back-link{
+    display:inline-block;margin-bottom:18px;
+    font-size:.85rem;font-weight:600;color:var(--ocean);
+    text-decoration:none;opacity:.75;
+  }
+  .back-link:hover{opacity:1;}
+  h1{
+    font-family:var(--font-display);font-size:1.5rem;color:var(--ocean);
+    margin:0 0 6px;
+  }
+  .sub{font-size:.9rem;color:var(--text-soft);margin:0 0 26px;line-height:1.5;}
+  label{
+    display:block;font-size:.8rem;font-weight:600;color:var(--ocean);
+    margin-bottom:6px;
+  }
+  .field{margin-bottom:16px;}
+  input{
+    width:100%;padding:11px 14px;
+    border:1px solid var(--border-soft);border-radius:10px;
+    font-family:var(--font-body);font-size:.92rem;color:var(--text);
+    background:#fff;
+  }
+  input:focus{outline:none;border-color:var(--ocean-light);}
+  .btn-submit{
+    width:100%;margin-top:6px;
+    padding:13px;border:none;border-radius:10px;
+    background:var(--grad-brand);color:#fff;
+    font-family:var(--font-body);font-weight:700;font-size:.92rem;
+    cursor:pointer;
+    transition:transform 180ms var(--ease-entrance),opacity 180ms;
+  }
+  .btn-submit:hover{transform:translateY(-1px);}
+  .btn-submit:disabled{opacity:.6;cursor:default;transform:none;}
+  .msg{
+    margin-top:16px;font-size:.85rem;line-height:1.5;padding:12px 14px;
+    border-radius:10px;
+  }
+  .msg-error{background:rgba(216,76,60,.08);color:var(--alert);}
+  .msg-success{background:rgba(39,174,96,.08);color:#1e7a45;}
+  .switch-link{
+    margin-top:22px;text-align:center;font-size:.85rem;color:var(--text-soft);
+  }
+  .switch-link a{color:var(--ocean);font-weight:600;text-decoration:underline;}
+</style>
+</head>
+<body>
+
+<div class="auth-card">
+  <a href="index.html" class="back-link">← Monito</a>
+  <h1>Bentornato</h1>
+  <p class="sub">Accedi per usare l'Assistente Frigo e gestire il tuo account.</p>
+
+  <form id="signinForm">
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" required autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn-submit" id="submitBtn">Accedi</button>
+  </form>
+
+  <div id="formMsg"></div>
+
+  <p class="switch-link">Non hai un account? <a href="registrati.html">Registrati</a></p>
+</div>
+
+<script type="module">
+  import { supabase } from "./assets/auth.js";
+
+  var form = document.getElementById("signinForm");
+  var submitBtn = document.getElementById("submitBtn");
+  var formMsg = document.getElementById("formMsg");
+
+  function showMsg(text, isError){
+    formMsg.innerHTML = "";
+    var el = document.createElement("p");
+    el.className = "msg " + (isError ? "msg-error" : "msg-success");
+    el.textContent = text;
+    formMsg.appendChild(el);
+  }
+
+  function getRedirectTarget(){
+    var params = new URLSearchParams(window.location.search);
+    var target = params.get("redirect");
+    return target && target.startsWith("/") === false && target.indexOf("://") === -1
+      ? target
+      : "assistente-frigo.html";
+  }
+
+  form.addEventListener("submit", async function(e){
+    e.preventDefault();
+    submitBtn.disabled = true;
+
+    var email = document.getElementById("email").value.trim();
+    var password = document.getElementById("password").value;
+
+    try {
+      var result = await supabase.auth.signInWithPassword({ email: email, password: password });
+      if (result.error) {
+        showMsg("Email o password non corrette.", true);
+        submitBtn.disabled = false;
+        return;
+      }
+      showMsg("Accesso effettuato...", false);
+      setTimeout(function(){ window.location.href = getRedirectTarget(); }, 500);
+    } catch (err) {
+      console.error("Signin error:", err);
+      showMsg("Errore di connessione. Riprova tra poco.", true);
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>

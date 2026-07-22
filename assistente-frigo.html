@@ -81,10 +81,40 @@
   .tier-banner strong{color:var(--ocean);}
   .tier-banner a{color:var(--ocean);text-decoration:underline;}
 
+  /* ---------- auth gating ---------- */
+  .auth-loading{
+    text-align:center;color:var(--text-soft);font-size:.9rem;
+    padding:60px 20px;
+  }
+  .locked-state{
+    max-width:440px;margin:40px auto;padding:0 20px;text-align:center;
+  }
+  .locked-state h2{
+    font-family:var(--font-display);font-size:1.25rem;color:var(--ocean);
+    margin:0 0 10px;
+  }
+  .locked-state p{color:var(--text-soft);font-size:.92rem;line-height:1.6;margin:0 0 22px;}
+  .locked-state .btn-upgrade{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--grad-brand);color:#fff;text-decoration:none;
+    font-weight:700;font-size:.9rem;padding:13px 24px;border-radius:10px;
+  }
+  main.chat-shell,#chipRow,#composerForm{display:none;}
+  body.tier-standard main.chat-shell,
+  body.tier-premium main.chat-shell{display:flex;}
+  body.tier-standard #chipRow,
+  body.tier-premium #chipRow{display:flex;}
+  body.tier-standard #composerForm,
+  body.tier-premium #composerForm{display:block;}
+  body.tier-standard .auth-loading,
+  body.tier-premium .auth-loading,
+  body.tier-pilot .auth-loading{display:none;}
+  .locked-state{display:none;}
+  body.tier-pilot .locked-state{display:block;}
+
   /* ---------- chat shell ---------- */
   .chat-shell{
     flex:1;
-    display:flex;
     flex-direction:column;
     max-width:640px;
     width:100%;
@@ -262,8 +292,16 @@
   <span class="chat-title">Assistente Frigo</span>
 </header>
 
-<div class="tier-banner">
-  🔒 Incluso nei piani <strong>Standard</strong> e <strong>Premium</strong>. Hai il piano Pilot? <a href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici per passare</a>.
+<div class="tier-banner" id="tierBanner">
+  Incluso nei piani <strong>Standard</strong> e <strong>Premium</strong>.
+</div>
+
+<div class="auth-loading" id="authLoading">Verifica accesso...</div>
+
+<div class="locked-state">
+  <h2>L'Assistente Frigo non è incluso nel piano Pilot</h2>
+  <p>Passa a Standard o Premium per avere aiuto immediato quando qualcosa non va, con foto e tutto.</p>
+  <a class="btn-upgrade" href="https://wa.me/39333XXXXXXX" target="_blank" rel="noopener">Scrivici per passare</a>
 </div>
 
 <main class="chat-shell">
@@ -300,9 +338,38 @@
   </form>
 </main>
 
-<script>
-(function(){
+<script type="module">
+import { getSession, getTier, signOut } from "./assets/auth.js";
+
+(async function(){
   "use strict";
+
+  // ---------- auth + tier gate ----------
+  // Client-side gating is UX only — /api/chat.js independently verifies the
+  // session token and tier server-side before ever calling the model, so
+  // this check can't be bypassed by skipping straight to the API.
+  var session = await getSession();
+  if (!session) {
+    window.location.href = "accedi.html?redirect=assistente-frigo.html";
+    return;
+  }
+
+  var tier = await getTier(session.user.id);
+  var accessToken = session.access_token;
+  var tierBanner = document.getElementById("tierBanner");
+
+  if (tier === "pilot") {
+    document.body.classList.add("tier-pilot");
+    tierBanner.innerHTML = 'Piano attuale: <strong>Pilot</strong> — l\'Assistente Frigo non è incluso.';
+    return; // nothing below this point wires up for a pilot-tier visitor
+  }
+
+  document.body.classList.add(tier === "premium" ? "tier-premium" : "tier-standard");
+  tierBanner.innerHTML = 'Piano attuale: <strong>' + (tier === "premium" ? "Premium" : "Standard") + '</strong> · <a href="#" id="signOutLink">Esci</a>';
+  document.getElementById("signOutLink").addEventListener("click", function(e){
+    e.preventDefault();
+    signOut().then(function(){ window.location.href = "index.html"; });
+  });
 
   // TODO: sostituisci con il numero reale del frigorista (usato solo se la
   // chiamata all'assistente fallisce del tutto — la risposta normale del
@@ -464,7 +531,10 @@
 
     fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + accessToken
+      },
       body: JSON.stringify({ messages: messages })
     })
       .then(function(res){

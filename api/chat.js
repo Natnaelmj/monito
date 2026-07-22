@@ -64,6 +64,39 @@ function isValidMessage(msg) {
   return false;
 }
 
+// Verifies the caller's Supabase session token and looks up their tier via
+// the service-role key (bypasses RLS, so this always sees the real value
+// regardless of policy). This is the actual access-control boundary — the
+// UI-side gate in assistente-frigo.html is just for a good experience, not
+// security, since anyone could otherwise call this endpoint directly.
+async function verifyUserAndTier(authHeader) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7);
+
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !anonKey || !serviceKey) return null;
+
+  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { Authorization: `Bearer ${token}`, apikey: anonKey },
+  });
+  if (!userRes.ok) return null;
+  const user = await userRes.json();
+  if (!user || !user.id) return null;
+
+  const profileRes = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${user.id}&select=tier`,
+    { headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey } },
+  );
+  if (!profileRes.ok) return null;
+  const rows = await profileRes.json();
+  const tier = rows[0] && rows[0].tier;
+  if (tier !== "standard" && tier !== "premium") return null;
+
+  return { id: user.id, tier };
+}
+
 // The client speaks the Anthropic-style {role, content:[{type,...}]} shape
 // (kept as-is so the front end doesn't care which provider is behind it).
 // Convert that to Gemini's {role, parts:[...]} shape, mapping
@@ -96,6 +129,12 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     res.status(503).json({ error: "Assistant not configured" });
+    return;
+  }
+
+  const authedUser = await verifyUserAndTier(req.headers.authorization);
+  if (!authedUser) {
+    res.status(403).json({ error: "Accesso richiesto: piano Standard o Premium" });
     return;
   }
 
