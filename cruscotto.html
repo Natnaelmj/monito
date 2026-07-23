@@ -47,17 +47,20 @@
     border-bottom:1px solid var(--border-soft);
     position:sticky;top:0;z-index:10;
   }
-  .header-left{display:flex;align-items:center;gap:14px;}
+  .header-left{display:flex;align-items:center;gap:14px;min-width:0;overflow:hidden;}
   .back-link{
     font-family:var(--font-body);font-weight:600;font-size:.85rem;
     color:var(--ocean);text-decoration:none;opacity:.8;transition:opacity 200ms;
+    white-space:nowrap;flex-shrink:0;
   }
   .back-link:hover{opacity:1;}
   .page-title{
     font-family:var(--font-display);font-weight:600;font-size:.95rem;color:var(--ocean);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .sign-out-link{
     font-size:.82rem;font-weight:600;color:var(--ocean);text-decoration:underline;
+    white-space:nowrap;flex-shrink:0;
   }
 
   .demo-note{

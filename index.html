@@ -122,10 +122,12 @@
   }
   .site-header .container{
     display:flex;align-items:center;justify-content:space-between;
+    gap:10px;
     height:64px;
   }
   .logo{
     display:flex;align-items:center;
+    flex-shrink:0;
     text-decoration:none;
   }
   .logo-img{
@@ -133,15 +135,26 @@
     width:auto;
     display:block;
   }
+  /* min-width:0 lets this flex item actually shrink below its content size;
+     without it, longer text (e.g. from browser auto-translate) can't wrap
+     the row and instead forces items to compress-wrap into each other. When
+     it still doesn't fit, it scrolls horizontally instead of breaking. */
   .header-actions{
-    display:flex;align-items:center;gap:22px;
+    display:flex;align-items:center;gap:18px;
+    min-width:0;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
+  .header-actions::-webkit-scrollbar{display:none;}
   .nav-link{
     font-family:var(--font-body);
     font-weight:600;
     font-size:.85rem;
     color:var(--ocean);
     text-decoration:none;
+    white-space:nowrap;
+    flex-shrink:0;
     transition:color 200ms;
   }
   .nav-link:hover{color:var(--ocean-glow);}
@@ -151,6 +164,8 @@
     font-size:.85rem;
     color:var(--ocean);
     text-decoration:none;
+    white-space:nowrap;
+    flex-shrink:0;
     padding:8px 16px;
     border:1.5px solid var(--border-soft);
     border-radius:8px;
